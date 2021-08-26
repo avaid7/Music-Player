@@ -1,0 +1,192 @@
+from tkinter import *
+import pygame
+from tkinter import filedialog
+import time
+from mutagen.mp3 import MP3
+import tkinter.ttk as ttk
+
+
+root=Tk()
+root.title('MP3 Music')
+root.geometry('500x450')
+
+#initializing the Pygame mixer which helps in playing audio
+pygame.mixer.init()
+
+def play_time():
+    current_time=pygame.mixer.music.get_pos()//1000
+    converted_current_time=time.strftime('%M:%S',time.gmtime(current_time))
+    
+    #getting total length with mutagen
+    song=song_box.get(ACTIVE)
+    song='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/'+song+'.mp3'
+    song_mut=MP3(song)
+
+    global song_length
+    song_length=song_mut.info.length
+    converted_total_time=time.strftime('%M:%S',time.gmtime(song_length))
+
+
+    status_bar.config(text='Time elapsed '+str(converted_current_time)+' of '+str(converted_total_time))
+    
+    myslider.config(value=current_time)
+    status_bar.after(1,play_time )
+
+def add_song():
+    song=filedialog.askopenfilename(initialdir='testing_audio/',title='Choose a song',filetypes=(('mp3 Files','*.mp3'),))
+    song=song.replace('C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/','')
+    song=song.replace('.mp3','')
+    song_box.insert(END,song)
+
+def add_many_songs():
+    songs=filedialog.askopenfilenames(initialdir='testing_audio/',title='Choose some song',filetypes=(('mp3 Files','*.mp3'),))
+    for song in songs:
+        song=song.replace('C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/','')
+        song=song.replace('.mp3','')
+        song_box.insert(END,song)
+
+def play():
+    song=song_box.get(ACTIVE)
+    song='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/'+song+'.mp3'
+
+    pygame.mixer.music.load(song)
+    pygame.mixer.music.play()
+
+    #call the play_time function to get the current song length, this function is called because of song slider
+    play_time()
+
+def stop():
+    pygame.mixer.music.stop()
+    song_box.selection_clear(ACTIVE)
+
+    #clear status bar
+    status_bar.config(text='')
+
+#create global paused variable
+global paused
+paused=False
+
+def pause(is_paused):
+    global paused
+    paused=is_paused
+
+    if paused:
+        pygame.mixer.music.unpause()
+        paused=False
+    else:
+        pygame.mixer.music.pause()
+        paused=True
+
+def next():
+    current_song=song_box.curselection()
+    next_song=(current_song[0]+1)
+    song=song_box.get(next_song)
+
+    song='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/'+song+'.mp3'
+    pygame.mixer.music.load(song)
+    pygame.mixer.music.play()
+    
+    #clear previous selection in playlist
+    song_box.selection_clear(0,END)
+    
+    #now updating the selection box
+    song_box.activate(next_song)
+    song_box.selection_set(next_song,last=None)
+
+
+
+
+def previous():
+    current_song=song_box.curselection()
+    previous_song=(current_song[0]-1)
+    song=song_box.get(previous_song)
+
+    song='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/testing_audio/'+song+'.mp3'
+    pygame.mixer.music.load(song)
+    pygame.mixer.music.play()
+    
+    #clear previous selection in playlist
+    song_box.selection_clear(0,END)
+    
+    #now updating the selection box
+    song_box.activate(previous_song)
+    song_box.selection_set(previous_song,last=None)
+
+def delete_song():
+    song_box.delete(ANCHOR)
+    pygame.mixer.music.stop()
+
+def delete_all_songs():
+    song_box.delete(0,END)
+    pygame.mixer.music.stop()
+
+
+def up():
+    volume=pygame.mixer.music.get_volume()
+    pygame.mixer.music.set_volume(volume+0.1)
+
+def down():
+    volume=pygame.mixer.music.get_volume()
+    pygame.mixer.music.set_volume(volume-0.1)
+
+def slide(x):
+    slider_label.config(text=f'{int(myslider.get())} of {int(song_length)}')
+
+#playlist box
+song_box=Listbox(root,bg='black',fg='green',width=60,selectbackground='gray',selectforeground='black')
+song_box.pack(pady=20)
+
+#images of buttons
+previous_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/previous50.png')
+next_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/next50.png')
+play_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/play50.png')
+pause_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/pause50.png')
+stop_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/stop50.png')
+up_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/up50.png')
+down_btn_img=PhotoImage(file='C:/Users/akshi/OneDrive/Desktop/mini-projects/Music player/button_images/down50.png')
+
+#player control frame
+controls_frame=Frame(root)
+controls_frame.pack()
+
+#creating buttons
+previous_button=Button(controls_frame,image=previous_btn_img,borderwidth=0,command=previous)
+next_button=Button(controls_frame,image=next_btn_img,borderwidth=0,command=next)
+play_button=Button(controls_frame,image=play_btn_img,borderwidth=0,command=play)
+pause_button=Button(controls_frame,image=pause_btn_img,borderwidth=0,command=lambda:pause(paused))
+stop_button=Button(controls_frame,image=stop_btn_img,borderwidth=0,command=stop)
+up_button=Button(controls_frame,image=up_btn_img,borderwidth=0,command=up)
+down_button=Button(controls_frame,image=down_btn_img,borderwidth=0,command=down)
+
+#positioning of Buttons
+previous_button.grid(row=0,column=1,padx=10)
+play_button.grid(row=0,column=2,padx=10)
+pause_button.grid(row=0,column=3,padx=10)
+stop_button.grid(row=0,column=4,padx=10)
+next_button.grid(row=0,column=5,padx=10)
+up_button.grid(row=0,column=0,padx=10)
+down_button.grid(row=1,column=0,padx=10)
+
+#creating menu for adding songs
+my_menu=Menu(root)
+root.config(menu=my_menu)
+add_song_menu=Menu(my_menu)
+my_menu.add_cascade(label='Add Songs',menu=add_song_menu)
+add_song_menu.add_command(label='Add one song to playlist',command=add_song)
+add_song_menu.add_command(label='Add many songs to playlist',command=add_many_songs)
+
+#creating menu for deleting songs
+remove_song_menu=Menu(my_menu)
+my_menu.add_cascade(label='Remove Songs',menu=remove_song_menu)
+remove_song_menu.add_command(label='Delete a song from playlist',command=delete_song)
+remove_song_menu.add_command(label='Delete all songs from playlist',command=delete_all_songs)
+
+#create status bar
+status_bar=Label(root,text='',bd=1,relief=GROOVE,anchor=E)
+status_bar.pack(fill=X,side=BOTTOM,ipady=2)
+
+#creating slider
+myslider=ttk.Scale(root,from_=0,to=100,orient=HORIZONTAL,value=0,command=slide,length=360)
+myslider.pack(pady=30)
+
+root.mainloop()
